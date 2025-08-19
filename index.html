@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>IA Jogo da Velha — Kids</title>
+  <title>Jogo da Velha — Dark</title>
   <style>
     :root{
       --bg:#0f1117;
@@ -152,20 +152,13 @@
     .announce.win-x{ color:var(--x); box-shadow:inset 0 0 0 1px rgba(245,158,11,.25); }
     .announce.win-o{ color:var(--o); box-shadow:inset 0 0 0 1px rgba(96,165,250,.25); }
     .announce.draw{ color:var(--muted); }
-
-    .credit{
-      margin-top:12px;
-      font-size:.85rem;
-      color:var(--muted);
-      text-align:center;
-    }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="card">
-      <h1>IA - Jogo da Velha <span style="font-size:1.2rem;color:var(--primary)">• Kids</span></h1>
-      <p class="sub">Jogue contra o computador: você é X, a IA é O.</p>
+      <h1>Jogo da Velha <span style="font-size:1.2rem;color:var(--primary)">• Dark</span></h1>
+      <p class="sub">Jogue localmente: alterna entre X e O. Primeiro a alinhar três vence.</p>
 
       <div class="status">
         <div class="badge" id="turnBadge" aria-live="polite">
@@ -180,6 +173,7 @@
       </div>
 
       <div class="board" id="board" role="grid" aria-label="Tabuleiro do jogo da velha">
+        <!-- 9 células -->
         <button class="square" role="gridcell" aria-label="casa 1" data-idx="0"></button>
         <button class="square" role="gridcell" aria-label="casa 2" data-idx="1"></button>
         <button class="square" role="gridcell" aria-label="casa 3" data-idx="2"></button>
@@ -197,8 +191,6 @@
         <button class="btn primary" id="btnNovo">Nova rodada</button>
         <button class="btn" id="btnZerar">Zerar placar</button>
       </div>
-
-      <div class="credit">Powered by Michel Breno</div>
     </div>
   </div>
 
@@ -215,169 +207,101 @@
       const scoreOEl = document.getElementById('scoreO');
       const scoreDEl = document.getElementById('scoreD');
 
-      // Sons offline (Web Audio)
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const audioCtx = new AudioCtx();
-      const unlock = () => {
-        if (audioCtx.state !== 'running') audioCtx.resume();
-        window.removeEventListener('pointerdown', unlock);
-        window.removeEventListener('keydown', unlock);
-      };
-      window.addEventListener('pointerdown', unlock, { once: true });
-      window.addEventListener('keydown', unlock, { once: true });
-
-      function tone({ freq=600, duration=0.08, type='square', volume=0.22, start=audioCtx.currentTime }){
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, start);
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(start);
-        osc.stop(start + duration + 0.02);
-      }
-      const sClick = { play(){ const t=audioCtx.currentTime; tone({freq:520,duration:0.07,type:'square',volume:0.18,start:t}); tone({freq:260,duration:0.06,type:'square',volume:0.12,start:t}); } };
-      const sWin   = { play(){ const t=audioCtx.currentTime+0.02; tone({freq:740,duration:0.12,type:'sine',volume:0.22,start:t}); tone({freq:880,duration:0.12,type:'sine',volume:0.22,start:t+0.12}); tone({freq:988,duration:0.16,type:'sine',volume:0.22,start:t+0.24}); } };
-
       const WINS = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
+        [0,1,2], [3,4,5], [6,7,8], // linhas
+        [0,3,6], [1,4,7], [2,5,8], // colunas
+        [0,4,8], [2,4,6]           // diagonais
       ];
 
-      const HUMAN='X', CPU='O';
-      const state = { board:Array(9).fill(null), current:HUMAN, running:true, scores:{X:0,O:0,D:0} };
+      const state = {
+        board: Array(9).fill(null),
+        current: 'X',
+        running: true,
+        scores: { X:0, O:0, D:0 }
+      };
 
       function setTurnUI(){
         turnText.textContent = `Vez de ${state.current}`;
         dot.className = 'dot ' + (state.current === 'X' ? 'x' : 'o');
       }
+
       function renderCell(i){
         const val = state.board[i];
         const el = cells[i];
-        el.textContent = val || '';
+        el.textContent = val ? val : '';
         el.classList.toggle('x', val === 'X');
         el.classList.toggle('o', val === 'O');
         el.classList.toggle('disabled', !!val || !state.running);
         el.setAttribute('aria-label', `casa ${i+1}${val ? ' contém ' + val : ''}`);
       }
-      function renderBoard(){ for (let i=0;i<9;i++) renderCell(i); }
+
+      function renderBoard(){
+        for(let i=0;i<9;i++) renderCell(i);
+      }
+
       function clearHighlights(){
         cells.forEach(c => c.classList.remove('win'));
         announce.style.display = 'none';
         announce.className = 'announce';
         announce.textContent = '';
       }
+
       function checkWinner(){
-        for (const [a,b,c] of WINS){
+        for(const combo of WINS){
+          const [a,b,c] = combo;
           const v = state.board[a];
-          if (v && v === state.board[b] && v === state.board[c]) return { winner:v, combo:[a,b,c] };
+          if (v && v === state.board[b] && v === state.board[c]) {
+            return { winner: v, combo };
+          }
         }
-        if (state.board.every(Boolean)) return { winner:null, combo:null, draw:true };
+        if (state.board.every(Boolean)) return { winner: null, combo: null, draw:true };
         return null;
       }
-      function endRound(res){
-        state.running=false;
-        cells.forEach(c=>c.classList.add('disabled'));
-        if (res.draw){
-          state.scores.D++; scoreDEl.textContent = state.scores.D;
-          announce.textContent = 'Empate!'; announce.classList.add('draw');
+
+      function endRound(result){
+        state.running = false;
+        cells.forEach(c => c.classList.add('disabled'));
+
+        if (result.draw) {
+          state.scores.D++;
+          scoreDEl.textContent = state.scores.D;
+          announce.textContent = 'Empate!';
+          announce.classList.add('draw');
         } else {
-          const w = res.winner;
-          (w==='X' ? state.scores.X++ : state.scores.O++);
+          const w = result.winner;
+          (w === 'X' ? state.scores.X++ : state.scores.O++);
           scoreXEl.textContent = state.scores.X;
           scoreOEl.textContent = state.scores.O;
-          res.combo.forEach(i => cells[i].classList.add('win'));
+          result.combo.forEach(i => cells[i].classList.add('win'));
           announce.textContent = `${w} venceu!`;
-          announce.classList.add(w==='X' ? 'win-x' : 'win-o');
-          try { sWin.play(); } catch(e) {}
+          announce.classList.add(w === 'X' ? 'win-x' : 'win-o');
         }
         announce.style.display = 'block';
       }
 
-      // IA — minimax + aleatoriedade controlada
-      const winnerOf = (b) => {
-        for (const [a,b2,c] of WINS){ if (b[a] && b[a]===b[b2] && b[a]===b[c]) return b[a]; }
-        return null;
-      };
-      const emptySpots = (b) => { const r=[]; for (let i=0;i<9;i++) if (!b[i]) r.push(i); return r; };
-
-      function minimax(b, current, depth){
-        const w = winnerOf(b);
-        if (w===CPU) return { score: 10 - depth };
-        if (w===HUMAN) return { score: depth - 10 };
-        const empties = emptySpots(b);
-        if (!empties.length) return { score: 0 };
-        let bestScore = (current===CPU ? -Infinity : Infinity), bestIdx = null;
-        for (const idx of empties){
-          b[idx] = current;
-          const { score } = minimax(b, current===CPU ? HUMAN : CPU, depth+1);
-          b[idx] = null;
-          if (current===CPU ? (score>bestScore) : (score<bestScore)){
-            bestScore = score; bestIdx = idx;
-          }
-        }
-        return { score: bestScore, idx: bestIdx };
-      }
-
-      const dificuldadeErro = 0.60; // 60% das vezes a IA fará um movimento não ótimo
-
-      function bestMove(){
-        const b = state.board.slice();
-        const empties = emptySpots(b);
-
-        // vitória imediata
-        for (const i of empties){ b[i]=CPU; if (winnerOf(b)===CPU) return i; b[i]=null; }
-        // bloqueio imediato
-        for (const i of empties){ b[i]=HUMAN; if (winnerOf(b)===HUMAN) return i; b[i]=null; }
-
-        // fator de aleatoriedade controlada (só quando não há urgência)
-        if (empties.length && Math.random() < dificuldadeErro){
-          return empties[Math.floor(Math.random() * empties.length)];
-        }
-
-        // centro preferencial
-        if (b[4]==null) return 4;
-
-        // minimax como fallback
-        const { idx } = minimax(b, CPU, 0);
-        return idx ?? empties[0];
-      }
-
-      // Fluxo
-      function humanPlay(i){
-        if (!state.running || state.board[i] || state.current!==HUMAN) return;
-        state.board[i] = HUMAN;
+      function handlePlay(i){
+        if (!state.running || state.board[i]) return;
+        state.board[i] = state.current;
         renderCell(i);
-        try { sClick.play(); } catch(e) {}
-        const res = checkWinner();
-        if (res){ endRound(res); return; }
-        state.current = CPU; setTurnUI();
-        setTimeout(aiPlay, 220);
-      }
-      function aiPlay(){
-        if (!state.running || state.current!==CPU) return;
-        const m = bestMove();
-        if (m != null){
-          state.board[m] = CPU;
-          renderCell(m);
-          try { sClick.play(); } catch(e) {}
+
+        const result = checkWinner();
+        if (result) {
+          endRound(result);
+        } else {
+          state.current = (state.current === 'X') ? 'O' : 'X';
+          setTurnUI();
         }
-        const res = checkWinner();
-        if (res){ endRound(res); return; }
-        state.current = HUMAN; setTurnUI();
       }
 
       function newRound(){
         state.board.fill(null);
-        state.current = HUMAN;
+        state.current = 'X';
         state.running = true;
         clearHighlights();
         setTurnUI();
         renderBoard();
       }
+
       function resetScores(){
         state.scores = { X:0, O:0, D:0 };
         scoreXEl.textContent = '0';
@@ -390,23 +314,26 @@
       boardEl.addEventListener('click', (e)=>{
         const cell = e.target.closest('.square');
         if (!cell) return;
-        if (state.current !== HUMAN) return;
         const idx = Number(cell.dataset.idx);
-        humanPlay(idx);
+        handlePlay(idx);
       });
+
       boardEl.addEventListener('keydown', (e)=>{
+        // Acessibilidade: Enter/Espaço joga na célula focada
         const cell = e.target.closest('.square');
         if (!cell) return;
-        if ((e.key==='Enter' || e.key===' ') && state.running && state.current===HUMAN){
+        if ((e.key === 'Enter' || e.key === ' ') && state.running) {
           e.preventDefault();
-          humanPlay(Number(cell.dataset.idx));
+          handlePlay(Number(cell.dataset.idx));
         }
       });
+
       btnNovo.addEventListener('click', newRound);
       btnZerar.addEventListener('click', resetScores);
 
       // Inicialização
       newRound();
+      // Tornar células focáveis
       cells.forEach(c => c.setAttribute('tabindex','0'));
     })();
   </script>
