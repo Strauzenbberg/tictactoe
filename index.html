@@ -190,6 +190,8 @@
       <div class="controls">
         <button class="btn primary" id="btnNovo">Nova rodada</button>
         <button class="btn" id="btnZerar">Zerar placar</button>
+        <!-- Botão adicionado -->
+        <button class="btn" id="btn1Player">1 Player</button>
       </div>
     </div>
   </div>
@@ -206,6 +208,8 @@
       const scoreXEl = document.getElementById('scoreX');
       const scoreOEl = document.getElementById('scoreO');
       const scoreDEl = document.getElementById('scoreD');
+      // Novo: referência ao botão 1 Player
+      const btn1Player = document.getElementById('btn1Player');
 
       // Sons offline (Web Audio)
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -362,6 +366,10 @@
 
       btnNovo.addEventListener('click', newRound);
       btnZerar.addEventListener('click', resetScores);
+      // Novo: redirecionar para 1 Player na mesma aba
+      btn1Player.addEventListener('click', () => {
+        window.location.href = 'https://strauzenbberg.github.io/iatictactoe/';
+      });
 
       // Inicialização
       newRound();
