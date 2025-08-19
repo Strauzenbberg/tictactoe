@@ -5,12 +5,193 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Jogo da Velha — Dark</title>
   <style>
-    /* ... (estilos originais mantidos) ... */
+    :root{
+      --bg:#0f1117;
+      --panel:#151923;
+      --fg:#e6e8ef;
+      --muted:#a0a8b8;
+      --primary:#8b5cf6;   /* roxo */
+      --accent:#22d3ee;    /* ciano */
+      --win:#10b981;       /* verde */
+      --x:#f59e0b;         /* âmbar */
+      --o:#60a5fa;         /* azul */
+      --border:#232a36;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 800px at 10% -20%, #141826 0%, transparent 60%) no-repeat,
+                  radial-gradient(900px 700px at 110% 20%, #101525 0%, transparent 55%) no-repeat,
+                  var(--bg);
+      color:var(--fg);
+      font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+
+    .app{
+      width:min(92vw, 560px);
+      display:flex; flex-direction:column; align-items:center; gap:16px;
+    }
+
+    .card{
+      width:100%;
+      background:linear-gradient(180deg, #151a24, #121620);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:18px;
+      box-shadow:var(--shadow);
+    }
+
+    h1{
+      margin:0 0 6px 0;
+      font-size:clamp(22px, 3vw, 28px);
+      font-weight:700;
+      letter-spacing:.2px;
+      display:flex; align-items:center; gap:.5rem;
+    }
+    .sub{
+      margin:0 0 10px 0;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+
+    .status{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; margin:10px 0 14px 0;
+    }
+    .badge{
+      display:inline-flex; align-items:center; gap:.4rem;
+      background:#101521;
+      border:1px solid var(--border);
+      color:var(--muted);
+      padding:.45rem .7rem;
+      border-radius:999px;
+      font-size:.92rem;
+    }
+    .dot{width:.55rem; height:.55rem; border-radius:50%}
+    .dot.x{background:var(--x)}
+    .dot.o{background:var(--o)}
+
+    .scores{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .chip{
+      background:#0f1523;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:.4rem .65rem;
+      color:var(--muted);
+      font-size:.9rem;
+    }
+
+    .board{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      width:100%;
+      margin:6px 0 10px 0;
+    }
+    .square{
+      aspect-ratio:1/1;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, #151a22, #121620);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800;
+      font-size:clamp(32px, 8vw, 56px);
+      letter-spacing:1px;
+      color:#cfd7ff;
+      cursor:pointer;
+      user-select:none;
+      transition:transform .06s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+      box-shadow: inset 0 0 0 0 rgba(255,255,255,0);
+    }
+    .square:hover{ transform:translateY(-1px); }
+    .square:active{ transform:translateY(0); }
+    .square.disabled{ cursor:default; opacity:.9; }
+    .square.x{ color:var(--x); text-shadow:0 0 18px rgba(245,158,11,.2); }
+    .square.o{ color:var(--o); text-shadow:0 0 18px rgba(96,165,250,.25); }
+    .square.win{
+      background:linear-gradient(180deg, rgba(16,185,129,.14), rgba(16,185,129,.06));
+      border-color:rgba(16,185,129,.4);
+      box-shadow: inset 0 0 0 1px rgba(16,185,129,.35), 0 8px 30px rgba(16,185,129,.15);
+    }
+
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+      margin-top:6px;
+    }
+    button.btn{
+      background:linear-gradient(180deg, #1c2230, #161b27);
+      border:1px solid var(--border);
+      color:var(--fg);
+      padding:.65rem 1rem;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+      letter-spacing:.2px;
+      transition:filter .15s ease, transform .06s ease, border-color .2s ease;
+    }
+    button.btn:hover{ filter:brightness(1.08); border-color:#2b3343; }
+    button.btn:active{ transform:translateY(1px); }
+    .btn.primary{
+      background:linear-gradient(180deg, rgba(139,92,246,.22), rgba(139,92,246,.14));
+      border-color:rgba(139,92,246,.5);
+      color:#e9e5ff;
+    }
+    .announce{
+      text-align:center; font-size:1.05rem; font-weight:600;
+      padding:.6rem .8rem; border-radius:10px; margin:8px 0 0;
+      background:linear-gradient(180deg, #121826, #0f1421);
+      border:1px solid var(--border);
+    }
+    .announce.win-x{ color:var(--x); box-shadow:inset 0 0 0 1px rgba(245,158,11,.25); }
+    .announce.win-o{ color:var(--o); box-shadow:inset 0 0 0 1px rgba(96,165,250,.25); }
+    .announce.draw{ color:var(--muted); }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- ... (HTML original mantido) ... -->
+    <div class="card">
+      <h1>Jogo da Velha <span style="font-size:1.2rem;color:var(--primary)">• Dark</span></h1>
+      <p class="sub">Jogue localmente: alterna entre X e O. Primeiro a alinhar três vence.</p>
+
+      <div class="status">
+        <div class="badge" id="turnBadge" aria-live="polite">
+          <span class="dot x" id="dot"></span>
+          <span id="turnText">Vez de X</span>
+        </div>
+        <div class="scores" aria-label="Placar">
+          <div class="chip">X: <strong id="scoreX">0</strong></div>
+          <div class="chip">O: <strong id="scoreO">0</strong></div>
+          <div class="chip">Empates: <strong id="scoreD">0</strong></div>
+        </div>
+      </div>
+
+      <div class="board" id="board" role="grid" aria-label="Tabuleiro do jogo da velha">
+        <!-- 9 células -->
+        <button class="square" role="gridcell" aria-label="casa 1" data-idx="0"></button>
+        <button class="square" role="gridcell" aria-label="casa 2" data-idx="1"></button>
+        <button class="square" role="gridcell" aria-label="casa 3" data-idx="2"></button>
+        <button class="square" role="gridcell" aria-label="casa 4" data-idx="3"></button>
+        <button class="square" role="gridcell" aria-label="casa 5" data-idx="4"></button>
+        <button class="square" role="gridcell" aria-label="casa 6" data-idx="5"></button>
+        <button class="square" role="gridcell" aria-label="casa 7" data-idx="6"></button>
+        <button class="square" role="gridcell" aria-label="casa 8" data-idx="7"></button>
+        <button class="square" role="gridcell" aria-label="casa 9" data-idx="8"></button>
+      </div>
+
+      <div id="announce" class="announce" style="display:none;"></div>
+
+      <div class="controls">
+        <button class="btn primary" id="btnNovo">Nova rodada</button>
+        <button class="btn" id="btnZerar">Zerar placar</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -27,9 +208,9 @@
       const scoreDEl = document.getElementById('scoreD');
 
       const WINS = [
-        [0,1,2], [3,4,5], [6,7,8],
-        [0,3,6], [1,4,7], [2,5,8],
-        [0,4,8], [2,4,6]
+        [0,1,2], [3,4,5], [6,7,8], // linhas
+        [0,3,6], [1,4,7], [2,5,8], // colunas
+        [0,4,8], [2,4,6]           // diagonais
       ];
 
       const state = {
@@ -38,19 +219,6 @@
         running: true,
         scores: { X:0, O:0, D:0 }
       };
-
-      function playBeep(freq = 440, duration = 150, volume = 0.3) {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.value = freq;
-        gain.gain.value = volume;
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + duration / 1000);
-      }
 
       function setTurnUI(){
         turnText.textContent = `Vez de ${state.current}`;
@@ -99,7 +267,6 @@
           scoreDEl.textContent = state.scores.D;
           announce.textContent = 'Empate!';
           announce.classList.add('draw');
-          playBeep(300); // som de empate
         } else {
           const w = result.winner;
           (w === 'X' ? state.scores.X++ : state.scores.O++);
@@ -108,7 +275,6 @@
           result.combo.forEach(i => cells[i].classList.add('win'));
           announce.textContent = `${w} venceu!`;
           announce.classList.add(w === 'X' ? 'win-x' : 'win-o');
-          playBeep(800); // som de vitória
         }
         announce.style.display = 'block';
       }
@@ -117,7 +283,6 @@
         if (!state.running || state.board[i]) return;
         state.board[i] = state.current;
         renderCell(i);
-        playBeep(600); // som de jogada
 
         const result = checkWinner();
         if (result) {
@@ -135,7 +300,6 @@
         clearHighlights();
         setTurnUI();
         renderBoard();
-        playBeep(500); // som de nova rodada
       }
 
       function resetScores(){
@@ -144,9 +308,9 @@
         scoreOEl.textContent = '0';
         scoreDEl.textContent = '0';
         newRound();
-        playBeep(400); // som de reset
       }
 
+      // Eventos
       boardEl.addEventListener('click', (e)=>{
         const cell = e.target.closest('.square');
         if (!cell) return;
@@ -155,6 +319,7 @@
       });
 
       boardEl.addEventListener('keydown', (e)=>{
+        // Acessibilidade: Enter/Espaço joga na célula focada
         const cell = e.target.closest('.square');
         if (!cell) return;
         if ((e.key === 'Enter' || e.key === ' ') && state.running) {
@@ -166,9 +331,12 @@
       btnNovo.addEventListener('click', newRound);
       btnZerar.addEventListener('click', resetScores);
 
+      // Inicialização
       newRound();
+      // Tornar células focáveis
       cells.forEach(c => c.setAttribute('tabindex','0'));
     })();
   </script>
 </body>
 </html>
+```
