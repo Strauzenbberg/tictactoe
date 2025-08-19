@@ -207,32 +207,6 @@
       const scoreOEl = document.getElementById('scoreO');
       const scoreDEl = document.getElementById('scoreD');
 
-         // Sons offline (Web Audio)
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const audioCtx = new AudioCtx();
-      const unlock = () => {
-        if (audioCtx.state !== 'running') audioCtx.resume();
-        window.removeEventListener('pointerdown', unlock);
-        window.removeEventListener('keydown', unlock);
-      };
-      window.addEventListener('pointerdown', unlock, { once: true });
-      window.addEventListener('keydown', unlock, { once: true });
-
-      function tone({ freq=600, duration=0.08, type='square', volume=0.22, start=audioCtx.currentTime }){
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, start);
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(start);
-        osc.stop(start + duration + 0.02);
-      }
-      const sClick = { play(){ const t=audioCtx.currentTime; tone({freq:520,duration:0.07,type:'square',volume:0.18,start:t}); tone({freq:260,duration:0.06,type:'square',volume:0.12,start:t}); } };
-      const sWin   = { play(){ const t=audioCtx.currentTime+0.02; tone({freq:740,duration:0.12,type:'sine',volume:0.22,start:t}); tone({freq:880,duration:0.12,type:'sine',volume:0.22,start:t+0.12}); tone({freq:988,duration:0.16,type:'sine',volume:0.22,start:t+0.24}); } };
-      
       const WINS = [
         [0,1,2], [3,4,5], [6,7,8], // linhas
         [0,3,6], [1,4,7], [2,5,8], // colunas
@@ -363,38 +337,6 @@
       cells.forEach(c => c.setAttribute('tabindex','0'));
     })();
   </script>
-  <script>
-    (function () {
-      var NAMESPACE = 'meu-portfolio';
-    var KEY = location.pathname; // usa o caminho da URL como identificador
-    
-      function render(n) {
-        var id = 'visit-counter-badge';
-        var el = document.getElementById(id);
-        if (!el) {
-          el = document.createElement('div');
-          el.id = id;
-          el.style.cssText = 'position:fixed;bottom:12px;right:12px;background:rgba(0,0,0,0.4);color:#fff;padding:6px 10px;border-radius:999px;font:12px/1.2 system-ui,Arial,sans-serif;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:2147483647';
-          document.body.appendChild(el);
-        }
-        el.textContent = 'Visitas: ' + n;
-      }
-    
-      var url = 'https://api.countapi.xyz/hit/' +
-                encodeURIComponent(NAMESPACE) + '/' +
-                encodeURIComponent(KEY);
-    
-      fetch(url).then(r => r.json()).then(d => {
-        render(d && typeof d.value === 'number' ? d.value : 0);
-      }).catch(() => {
-        var k = 'vc_' + NAMESPACE + '_' + KEY;
-        var n = +(localStorage.getItem(k) || 0) + 1;
-        localStorage.setItem(k, n);
-        render(n);
-      });
-    })();
-    </script>
-    
 </body>
 </html>
-
+```
